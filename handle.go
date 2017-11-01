@@ -18,7 +18,20 @@ import (
 )
 
 // HandlerFunc ...
-type HandlerFunc func(data []byte, messageID string, inReplyTo string, fromAddr *mail.Address, subject string, date time.Time, texts []string, parts []*Part)
+type HandlerFunc func(m *Mail)
+
+// Mail contains raw mail data and some extracted essential info from it.
+type Mail struct {
+	Header    mail.Header
+	Data      []byte
+	MessageID string
+	InReplyTo string
+	FromAddr  *mail.Address
+	Subject   string
+	Date      time.Time
+	Texts     []string
+	Parts     []*Part
+}
 
 // Part is like multipart.Part but it provides raw data bytes.
 type Part struct {
@@ -103,16 +116,18 @@ func (d *Daemon) handleNewEmails(data map[int][]byte, headerOnly bool) {
 			texts, parts = readBody(textproto.MIMEHeader(msg.Header), msg.Body)
 		}
 
-		log.Println("received:", messageID,
-			"\nin-reply-to:", inReplyTo,
-			"\nfrom:", fromAddr.String(),
-			"\nsubject:", subject,
-			"\ndate:", date.Local(),
-			"\ntexts:", texts,
-		)
+		if d.config.Debug {
+			log.Println("received:", messageID,
+				"\nin-reply-to:", inReplyTo,
+				"\nfrom:", fromAddr.String(),
+				"\nsubject:", subject,
+				"\ndate:", date.Local(),
+				"\ntexts:", texts,
+			)
+		}
 
 		for _, handler := range d.handlers {
-			go handler(mailData, messageID, inReplyTo, fromAddr, subject, date, texts, parts)
+			go handler(&Mail{msg.Header, mailData, messageID, inReplyTo, fromAddr, subject, date, texts, parts})
 		}
 	}
 }

@@ -39,11 +39,11 @@ func main() {
 
 	daemon := mailbot.NewDaemon(config)
 
-	daemon.RegisterHandler(func(data []byte, messageID string, inReplyTo string, fromAddr *mail.Address, subject string, date time.Time, texts []string, parts []*mailbot.Part) {
+	daemon.RegisterHandler(func(m *mailbot.Mail) {
 		reply := "Not sure what you are looking for."
 
-		text := strings.Join(texts, "\n")
-		if subject == "What time is it" {
+		text := strings.Join(m.Texts, "\n")
+		if strings.Contains(strings.ToLower(m.Subject), "what time is it") {
 			if strings.Contains(text, "UTC") {
 				reply = time.Now().UTC().String()
 			} else {
@@ -51,13 +51,16 @@ func main() {
 			}
 		}
 
-		header := map[string]string{}
-		header["Subject"] = mime.QEncoding.Encode("utf-8", "Re: "+subject)
-		header["From"] = config.User
-		header["Message-Id"] = mailbot.GenerateMessageID(config.User)
-		header["In-Reply-To"] = messageID
-		header["To"] = fromAddr.String()
-		err := daemon.SendPlainTextMail(fromAddr.Address, header, reply)
+		nheader := map[string]string{}
+		nheader["Subject"] = mime.QEncoding.Encode("utf-8", "Re: "+m.Subject)
+		nheader["From"] = config.User
+		nheader["Message-Id"] = mailbot.GenerateMessageID(config.User)
+		nheader["In-Reply-To"] = m.MessageID
+		nheader["To"] = m.FromAddr.String()
+		if replyTo := m.Header.Get("Reply-To"); replyTo != "" {
+			nheader["To"] = replyTo
+		}
+		err := daemon.SendPlainTextMail(m.FromAddr.Address, nheader, reply)
 		if err != nil {
 			log.Println(err)
 		}
