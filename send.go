@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"net"
+	"net/mail"
 	"net/smtp"
 	"strings"
 )
@@ -19,7 +20,7 @@ func (a unencryptedAuth) Start(server *smtp.ServerInfo) (string, []byte, error) 
 }
 
 // SendMail sends an email.
-func (d *Daemon) SendMail(to string, header map[string]string, body []byte) (err error) {
+func (d *Daemon) SendMail(header mail.Header, body []byte) (err error) {
 	var conn net.Conn
 	tlsConfig := &tls.Config{
 		ServerName: strings.Split(d.config.SMTPAddress, ":")[0],
@@ -56,23 +57,29 @@ func (d *Daemon) SendMail(to string, header map[string]string, body []byte) (err
 	if err != nil {
 		return
 	}
-	err = smtpClient.Rcpt(to)
+
+	addresses, err := addressParser.ParseList(header.Get("To"))
 	if err != nil {
 		return
 	}
-	err = smtpClient.Rcpt(to)
-	if err != nil {
-		return
+	for _, address := range addresses {
+		err = smtpClient.Rcpt(address.Address)
+		if err != nil {
+			return
+		}
 	}
+
 	w, err := smtpClient.Data()
 	if err != nil {
 		return
 	}
 
-	for k, v := range header {
-		_, err = w.Write([]byte(k + ": " + v + "\r\n"))
-		if err != nil {
-			return
+	for k, vs := range header {
+		for _, v := range vs {
+			_, err = w.Write([]byte(k + ": " + v + "\r\n"))
+			if err != nil {
+				return
+			}
 		}
 	}
 	_, err = w.Write([]byte("\r\n"))
@@ -93,15 +100,15 @@ func (d *Daemon) SendMail(to string, header map[string]string, body []byte) (err
 }
 
 // SendPlainTextMail sends a simple text email.
-func (d *Daemon) SendPlainTextMail(to string, header map[string]string, text string) (err error) {
-	header["Content-Transfer-Encoding"] = "base64"
-	header["Content-Type"] = "text/plain; charset=utf-8"
+func (d *Daemon) SendPlainTextMail(header mail.Header, text string) (err error) {
+	header["Content-Transfer-Encoding"] = []string{"base64"}
+	header["Content-Type"] = []string{"text/plain; charset=utf-8"}
 
 	body := []byte(base64.StdEncoding.EncodeToString([]byte(text)))
 	if err != nil {
 		return
 	}
-	
-	err = d.SendMail(to, header, body)
+
+	err = d.SendMail(header, body)
 	return
 }

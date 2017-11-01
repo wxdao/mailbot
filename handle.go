@@ -82,7 +82,6 @@ func readBody(h textproto.MIMEHeader, br io.Reader) (texts []string, parts []*Pa
 }
 
 func (d *Daemon) handleNewEmails(data map[int][]byte, headerOnly bool) {
-	addressParser := newAddressParser()
 	for _, mailData := range data {
 		msg, err := mail.ReadMessage(bytes.NewReader(mailData))
 		if err != nil {

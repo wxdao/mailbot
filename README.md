@@ -51,16 +51,16 @@ func main() {
 			}
 		}
 
-		nheader := map[string]string{}
-		nheader["Subject"] = mime.QEncoding.Encode("utf-8", "Re: "+m.Subject)
-		nheader["From"] = config.User
-		nheader["Message-Id"] = mailbot.GenerateMessageID(config.User)
-		nheader["In-Reply-To"] = m.MessageID
-		nheader["To"] = m.FromAddr.String()
+		header := mail.Header{}
+		header["Subject"] = []string{mime.QEncoding.Encode("utf-8", "Re: "+m.Subject)}
+		header["From"] = []string{config.User}
+		header["Message-Id"] = []string{mailbot.GenerateMessageID(config.User)}
+		header["In-Reply-To"] = []string{m.MessageID}
+		header["To"] = []string{m.FromAddr.String()}
 		if replyTo := m.Header.Get("Reply-To"); replyTo != "" {
-			nheader["To"] = replyTo
+			header["To"] = []string{replyTo}
 		}
-		err := daemon.SendPlainTextMail(m.FromAddr.Address, nheader, reply)
+		err := daemon.SendPlainTextMail(header, reply)
 		if err != nil {
 			log.Println(err)
 		}
