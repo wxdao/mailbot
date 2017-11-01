@@ -42,6 +42,8 @@ func (d *Daemon) Serve() (err error) {
 		// try STARTTLS
 		err = d.client.StartTLS(strings.Split(d.config.IMAPAddress, ":")[0])
 	}
+	defer d.client.Close()
+
 	if d.config.Debug {
 		d.client.Debug = os.Stderr
 	}
