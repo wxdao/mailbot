@@ -2,6 +2,7 @@ package mailbot
 
 import (
 	"crypto/tls"
+	"errors"
 	"os"
 	"os/signal"
 	"strconv"
@@ -9,6 +10,11 @@ import (
 	"time"
 
 	"github.com/wxdao/go-imap/imap"
+)
+
+var (
+	// ErrInterrupted means the loop is interrupted by signal.
+	ErrInterrupted = errors.New("interrupted")
 )
 
 // Daemon ...
@@ -69,7 +75,6 @@ func (d *Daemon) Serve() (err error) {
 
 	wait := make(chan int, 10)
 
-loop:
 	for {
 		var criteria string
 		if d.config.UnseenOnly {
@@ -100,11 +105,9 @@ loop:
 		case <-time.After(time.Minute * 5):
 			d.client.Done()
 		case <-interrupted:
-			break loop
+			return ErrInterrupted
 		}
 	}
-
-	return
 }
 
 // RegisterHandler registers a handler.

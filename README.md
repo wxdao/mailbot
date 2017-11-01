@@ -66,7 +66,12 @@ func main() {
 		}
 	})
 
-	log.Println(daemon.Serve())
+	for {
+		if err := daemon.Serve(); err == mailbot.ErrInterrupted {
+			break
+		}
+		log.Println(err)
+	}
 }
 
 ```
