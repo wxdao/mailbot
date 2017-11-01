@@ -58,16 +58,30 @@ func (d *Daemon) SendMail(header mail.Header, body []byte) (err error) {
 		return
 	}
 
-	addresses, err := addressParser.ParseList(header.Get("To"))
-	if err != nil {
-		return
-	}
-	for _, address := range addresses {
+	tos, _ := addressParser.ParseList(header.Get("To"))
+	for _, address := range tos {
 		err = smtpClient.Rcpt(address.Address)
 		if err != nil {
 			return
 		}
 	}
+
+	ccs, _ := addressParser.ParseList(header.Get("Cc"))
+	for _, address := range ccs {
+		err = smtpClient.Rcpt(address.Address)
+		if err != nil {
+			return
+		}
+	}
+
+	bccs, _ := addressParser.ParseList(header.Get("Bcc"))
+	for _, address := range bccs {
+		err = smtpClient.Rcpt(address.Address)
+		if err != nil {
+			return
+		}
+	}
+	delete(header, "Bcc")
 
 	w, err := smtpClient.Data()
 	if err != nil {
