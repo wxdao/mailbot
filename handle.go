@@ -96,7 +96,7 @@ func (d *Daemon) handleNewEmails(result map[int]*imap.FetchResult, headerOnly bo
 			continue
 		}
 
-		messageID := msg.Header.Get("Message-ID")
+		messageID := msg.Header.Get("Message-Id")
 		inReplyTo := msg.Header.Get("In-Reply-To")
 
 		fromAddr, err := UniAddressParser.Parse(msg.Header.Get("From"))
