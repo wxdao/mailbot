@@ -99,7 +99,7 @@ func (d *Daemon) handleNewEmails(result map[int]*imap.FetchResult, headerOnly bo
 		messageID := msg.Header.Get("Message-ID")
 		inReplyTo := msg.Header.Get("In-Reply-To")
 
-		fromAddr, err := addressParser.Parse(msg.Header.Get("From"))
+		fromAddr, err := UniAddressParser.Parse(msg.Header.Get("From"))
 		if err != nil {
 			if d.config.Debug {
 				log.Println("from:", err)
@@ -114,7 +114,7 @@ func (d *Daemon) handleNewEmails(result map[int]*imap.FetchResult, headerOnly bo
 			}
 		}
 
-		subject, err := addressParser.WordDecoder.DecodeHeader(msg.Header.Get("Subject"))
+		subject, err := UniAddressParser.WordDecoder.DecodeHeader(msg.Header.Get("Subject"))
 		if err != nil {
 			if d.config.Debug {
 				log.Println("subject:", err)

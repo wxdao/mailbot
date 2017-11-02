@@ -10,7 +10,8 @@ import (
 	"golang.org/x/text/encoding/htmlindex"
 )
 
-var wordDecoder = func() (dec *mime.WordDecoder) {
+// UniWordDecoder wraps a mime.WordDecoder with multiple encodings support.
+var UniWordDecoder = func() (dec *mime.WordDecoder) {
 	dec = new(mime.WordDecoder)
 	dec.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
 		e, err := htmlindex.Get(charset)
@@ -22,9 +23,10 @@ var wordDecoder = func() (dec *mime.WordDecoder) {
 	return
 }()
 
-var addressParser = func() (parser *mail.AddressParser) {
+// UniAddressParser wraps a mail.AddressParser with multiple encodings support.
+var UniAddressParser = func() (parser *mail.AddressParser) {
 	parser = new(mail.AddressParser)
-	parser.WordDecoder = wordDecoder
+	parser.WordDecoder = UniWordDecoder
 	return
 }()
 

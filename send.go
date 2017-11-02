@@ -58,7 +58,7 @@ func (d *Daemon) SendMail(header mail.Header, body []byte) (err error) {
 		return
 	}
 
-	tos, _ := addressParser.ParseList(header.Get("To"))
+	tos, _ := UniAddressParser.ParseList(header.Get("To"))
 	for _, address := range tos {
 		err = smtpClient.Rcpt(address.Address)
 		if err != nil {
@@ -66,7 +66,7 @@ func (d *Daemon) SendMail(header mail.Header, body []byte) (err error) {
 		}
 	}
 
-	ccs, _ := addressParser.ParseList(header.Get("Cc"))
+	ccs, _ := UniAddressParser.ParseList(header.Get("Cc"))
 	for _, address := range ccs {
 		err = smtpClient.Rcpt(address.Address)
 		if err != nil {
@@ -74,7 +74,7 @@ func (d *Daemon) SendMail(header mail.Header, body []byte) (err error) {
 		}
 	}
 
-	bccs, _ := addressParser.ParseList(header.Get("Bcc"))
+	bccs, _ := UniAddressParser.ParseList(header.Get("Bcc"))
 	for _, address := range bccs {
 		err = smtpClient.Rcpt(address.Address)
 		if err != nil {
