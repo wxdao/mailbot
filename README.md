@@ -55,6 +55,7 @@ func main() {
 		header["Subject"] = []string{mime.QEncoding.Encode("utf-8", "Re: "+m.Subject)}
 		header["From"] = []string{config.User}
 		header["Message-Id"] = []string{mailbot.GenerateMessageID(config.User)}
+		header["Message-Id"] = []string{mailbot.GenerateMessageID(config.User)}
 		header["In-Reply-To"] = []string{m.MessageID}
 		header["To"] = []string{m.FromAddr.String()}
 		if replyTo := m.Header.Get("Reply-To"); replyTo != "" {

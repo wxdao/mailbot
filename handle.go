@@ -11,11 +11,16 @@ import (
 	"mime/quotedprintable"
 	"net/mail"
 	"net/textproto"
+	"regexp"
 	"strings"
 	"time"
 
+	"github.com/wxdao/go-imap/imap"
+
 	"golang.org/x/text/encoding/htmlindex"
 )
+
+var regexParenthese, _ = regexp.Compile(` \(.*\)`)
 
 // HandlerFunc ...
 type HandlerFunc func(m *Mail)
@@ -23,7 +28,7 @@ type HandlerFunc func(m *Mail)
 // Mail contains raw mail data and some extracted essential info from it.
 type Mail struct {
 	Header    mail.Header
-	Data      []byte
+	Result    *imap.FetchResult
 	MessageID string
 	InReplyTo string
 	FromAddr  *mail.Address
@@ -81,32 +86,40 @@ func readBody(h textproto.MIMEHeader, br io.Reader) (texts []string, parts []*Pa
 	return
 }
 
-func (d *Daemon) handleNewEmails(data map[int][]byte, headerOnly bool) {
-	for _, mailData := range data {
-		msg, err := mail.ReadMessage(bytes.NewReader(mailData))
+func (d *Daemon) handleNewEmails(result map[int]*imap.FetchResult, headerOnly bool) {
+	for _, fetchResult := range result {
+		msg, err := mail.ReadMessage(bytes.NewReader(fetchResult.Data))
 		if err != nil {
+			if d.config.Debug {
+				log.Println("msg:", err)
+			}
 			continue
 		}
 
-		messageID := msg.Header.Get("message-id")
-		fromAddr, err := addressParser.Parse(msg.Header.Get("from"))
+		messageID := msg.Header.Get("Message-ID")
+		inReplyTo := msg.Header.Get("In-Reply-To")
+
+		fromAddr, err := addressParser.Parse(msg.Header.Get("From"))
 		if err != nil {
-			continue
+			if d.config.Debug {
+				log.Println("from:", err)
+			}
 		}
 
-		inReplyTo, err := addressParser.WordDecoder.DecodeHeader(msg.Header.Get("in-reply-to"))
+		// remove (GMT+08:00) like suffix
+		date, err := mail.ParseDate(regexParenthese.ReplaceAllString(msg.Header.Get("Date"), ""))
 		if err != nil {
-			continue
+			if d.config.Debug {
+				log.Println("date:", err)
+			}
 		}
 
-		date, err := mail.ParseDate(msg.Header.Get("date"))
+		subject, err := addressParser.WordDecoder.DecodeHeader(msg.Header.Get("Subject"))
 		if err != nil {
-			continue
-		}
-
-		subject, err := addressParser.WordDecoder.DecodeHeader(msg.Header.Get("subject"))
-		if err != nil {
-			continue
+			if d.config.Debug {
+				log.Println("subject:", err)
+			}
+			subject = msg.Header.Get("Subject")
 		}
 
 		var texts []string
@@ -126,7 +139,7 @@ func (d *Daemon) handleNewEmails(data map[int][]byte, headerOnly bool) {
 		}
 
 		for _, handler := range d.handlers {
-			go handler(&Mail{msg.Header, mailData, messageID, inReplyTo, fromAddr, subject, date, texts, parts})
+			handler(&Mail{msg.Header, fetchResult, messageID, inReplyTo, fromAddr, subject, date, texts, parts})
 		}
 	}
 }

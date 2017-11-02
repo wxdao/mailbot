@@ -89,14 +89,14 @@ func (d *Daemon) Serve() (err error) {
 			return err
 		}
 		for _, seq := range seqs {
-			data, err := d.client.FetchRFC822([]int{seq}, !d.config.MarkSeen)
+			result, err := d.client.FetchRFC822([]int{seq}, !d.config.MarkSeen)
 			if err != nil {
 				return err
 			}
 			d.smallestSeq = seqs[len(seqs)-1]
 			wait <- 1
 			go func() {
-				d.handleNewEmails(data, false)
+				d.handleNewEmails(result, false)
 				<-wait
 			}()
 		}
